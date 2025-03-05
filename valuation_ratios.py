@@ -78,6 +78,7 @@ def fetch_financial_data(ticker, period="5y"):
 
 def calculate_valuation_ratios(data):
     """Calculate valuation ratios from financial data."""
+    print("calculating valuation ratios")
     income_stmt = data['income_stmt']
     balance_sheet = data['balance_sheet']
     stock_data = data['stock_data']
@@ -131,7 +132,9 @@ def calculate_valuation_ratios(data):
     # This is typically calculated using current market data rather than historical
     # We'll use the trailing EV/EBITDA from the info object
     results['EV/EBITDA'] = info.get('enterpriseToEbitda', np.nan)
-    
+    results = results.reset_index()
+    results.columns = results.columns.map('_'.join)
+    print("succesfully calculated valuation ratios")
     return results
 
 def plot_trend_graphs(company_ratios, benchmark_ratios=None, market_ratios=None, output_dir="./output"):

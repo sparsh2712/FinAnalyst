@@ -51,6 +51,8 @@ def parse_arguments():
 def fetch_financial_data(ticker, period="5y"):
     """Fetch financial data for a given ticker."""
     # Get the ticker object
+    print("fetching financial data")
+    ticker = f"{ticker}.NS"
     tick = yf.Ticker(ticker)
     
     # Fetch financial statements
@@ -71,7 +73,7 @@ def fetch_financial_data(ticker, period="5y"):
         start_date = end_date - timedelta(days=365 * 5)
     
     stock_data = yf.download(ticker, start=start_date, end=end_date)
-    
+    print("succesfully fetched financial data")
     return {
         'income_stmt': income_stmt,
         'balance_sheet': balance_sheet,
@@ -81,6 +83,7 @@ def fetch_financial_data(ticker, period="5y"):
 
 def calculate_profitability_ratios(data):
     """Calculate profitability ratios from financial data."""
+    print("calculating profitability ratios")
     income_stmt = data['income_stmt']
     balance_sheet = data['balance_sheet']
     
@@ -115,7 +118,7 @@ def calculate_profitability_ratios(data):
     
     # Earnings Per Share (EPS)
     results['EPS (₹ per share)'] = data['info'].get('trailingEPS', np.nan)
-    
+    print("succesfully calculated profitability ratios")
     return results
 
 def plot_trend_graphs(company_ratios, benchmark_ratios=None, market_ratios=None, output_dir="./output"):

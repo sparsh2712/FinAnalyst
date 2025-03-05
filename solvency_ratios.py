@@ -76,6 +76,7 @@ def fetch_financial_data(ticker, period="5y"):
 
 def calculate_solvency_ratios(data):
     """Calculate solvency ratios from financial data."""
+    print("calculating solvency ratio")
     income_stmt = data['income_stmt']
     balance_sheet = data['balance_sheet']
     
@@ -109,6 +110,7 @@ def calculate_solvency_ratios(data):
         # Use Total Debt if available
         results['Debt-to-Asset Ratio'] = balance_sheet['Total Debt'] / balance_sheet['Total Assets']
     
+    print("succesfully calculated solvency ratio")
     return results
 
 def plot_trend_graphs(company_ratios, benchmark_ratios=None, output_dir="./output"):

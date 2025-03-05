@@ -45,7 +45,9 @@ def parse_arguments():
 
 def fetch_financial_data(ticker, period="5y", market_index="^GSPC"):
     """Fetch financial data for a given ticker."""
+    print("fetching market data")
     # Get the ticker object
+    ticker = f"{ticker}.NS"
     tick = yf.Ticker(ticker)
     
     # Get stock price data for the period
@@ -67,6 +69,7 @@ def fetch_financial_data(ticker, period="5y", market_index="^GSPC"):
     except:
         dividends = pd.Series(dtype=float)
     
+    print("succesfully fetched market data")
     return {
         'stock_data': stock_data,
         'market_data': market_data,
@@ -74,47 +77,55 @@ def fetch_financial_data(ticker, period="5y", market_index="^GSPC"):
         'info': tick.info
     }
 
-def calculate_market_performance_ratios(data, period="5y"):
+def calculate_market_performance_ratios(data, ticker, period="5y"):
     """Calculate market performance ratios from financial data."""
+    print("calculating market performance ratios")
     stock_data = data['stock_data']
     market_data = data['market_data']
     dividends = data['dividends']
     info = data['info']
     
+    dividends.index = dividends.index.to_pydatetime()
+    dividends.index = dividends.index.tz_localize(None)
+
     # Calculate ratios
     results = pd.DataFrame()
     
     # For yearly analysis, resample to yearly frequency
-    stock_yearly = stock_data.resample('Y').last()
+    stock_yearly = stock_data.resample('YE').last()
     
     # Dividend Yield (%) = (Annual Dividend Per Share / Stock Price) * 100
     # Calculate historical dividend yield
     dividend_yield = pd.DataFrame(index=stock_yearly.index, columns=['Dividend Yield (%)'])
-    
     for year in stock_yearly.index:
         # Get dividends for the year
+        print(f"year: {year}")
         year_start = datetime(year.year, 1, 1)
         year_end = datetime(year.year, 12, 31)
         
         # Filter dividends for the year
         year_dividends = dividends[(dividends.index >= year_start) & (dividends.index <= year_end)]
-        
         # Calculate annual dividend
         annual_dividend = year_dividends.sum()
-        
         # Calculate dividend yield
         if annual_dividend > 0:
-            dividend_yield.loc[year, 'Dividend Yield (%)'] = (annual_dividend / stock_yearly.loc[year, 'Close']) * 100
+            year = year.strftime('%Y-%m-%d')
+            if (ticker, year) in stock_yearly.index:
+                stock_price = stock_yearly.loc[(ticker, year), 'Close']
+                dividend_yield.loc[year, 'Dividend Yield (%)'] = (annual_dividend / stock_price) * 100
         else:
             dividend_yield.loc[year, 'Dividend Yield (%)'] = 0
-    
     # Beta (Stock Volatility)
     # Calculate rolling beta using 1-year windows with 3-month steps
+
     returns = stock_data['Close'].pct_change().dropna()
     market_returns = market_data['Close'].pct_change().dropna()
     
+    
     # Combine returns into a single DataFrame and align dates
-    combined_returns = pd.DataFrame({'stock': returns, 'market': market_returns})
+    stock_returns = returns.iloc[:, 0]
+    market_returns = market_returns.iloc[:, 0]
+    combined_returns = pd.DataFrame({'stock': stock_returns, 'market': market_returns})
     combined_returns = combined_returns.dropna()
     
     # Calculate rolling beta
@@ -124,7 +135,7 @@ def calculate_market_performance_ratios(data, period="5y"):
     rolling_beta = rolling_cov / rolling_var
     
     # Resample to yearly for the chart
-    beta_yearly = rolling_beta.resample('Y').last()
+    beta_yearly = rolling_beta.resample('YE').last()
     beta_df = pd.DataFrame(beta_yearly, columns=['Beta'])
     
     # Current Market Capitalization
@@ -134,6 +145,8 @@ def calculate_market_performance_ratios(data, period="5y"):
     results = pd.concat([dividend_yield, beta_df], axis=1)
     results['Market Capitalization'] = market_cap
     
+    print("Succesfully calculated performance ratios")
+
     return results
 
 def plot_trend_graphs(company_ratios, market_ratios=None, output_dir="./output"):

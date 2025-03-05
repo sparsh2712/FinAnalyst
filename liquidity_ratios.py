@@ -73,6 +73,7 @@ def fetch_financial_data(ticker, period="5y"):
 
 def calculate_liquidity_ratios(data):
     """Calculate liquidity ratios from financial data."""
+    print("calcualting liquidity ratio")
     balance_sheet = data['balance_sheet']
     
     # Calculate ratios
@@ -93,6 +94,7 @@ def calculate_liquidity_ratios(data):
         'Total Current Liabilities' in balance_sheet.columns):
         results['Cash Ratio'] = balance_sheet['Cash And Cash Equivalents'] / balance_sheet['Total Current Liabilities']
     
+    print("sucesfully calculated liquidity ratio")
     return results
 
 def plot_trend_graphs(company_ratios, benchmark_ratios=None, output_dir="./output"):

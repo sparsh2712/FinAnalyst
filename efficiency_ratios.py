@@ -77,6 +77,7 @@ def fetch_financial_data(ticker, period="5y"):
 
 def calculate_efficiency_ratios(data):
     """Calculate efficiency ratios from financial data."""
+    print("calculating efficiency ratio")
     income_stmt = data['income_stmt']
     balance_sheet = data['balance_sheet']
     
@@ -137,6 +138,7 @@ def calculate_efficiency_ratios(data):
                 income_stmt.loc[common_dates, 'Total Revenue']
             ) * 365
     
+    print("succesfully calculated efficiency ratio")
     return results
 
 def plot_trend_graphs(company_ratios, benchmark_ratios=None, output_dir="./output"):

@@ -16,6 +16,7 @@ import seaborn as sns
 from datetime import datetime, timedelta
 import os
 import yfinance as yf
+import json
 
 # Import ratio calculation modules
 from profitability_ratios import calculate_profitability_ratios, fetch_financial_data as fetch_profit_data
@@ -96,8 +97,8 @@ def calculate_all_ratios(ticker, period="5y"):
         solvency = calculate_solvency_ratios(company_financial_data)
         efficiency = calculate_efficiency_ratios(company_financial_data)
         valuation = calculate_valuation_ratios(company_financial_data)
-        market = calculate_market_performance_ratios(company_market_data, period)
-        
+        market = calculate_market_performance_ratios(company_market_data, ticker, period)
+
         return {
             "profitability": profitability,
             "liquidity": liquidity,
@@ -115,15 +116,19 @@ def create_trend_graph(ratio_df, ratio_name):
     if ratio_df is None or ratio_name not in ratio_df.columns or ratio_df[ratio_name].isnull().all():
         return None
     
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ratio_df[ratio_name].dropna().plot(ax=ax, marker='o', linewidth=2)
-    plt.title(f"{ratio_name} Trend")
-    plt.ylabel(ratio_name)
-    plt.xlabel("Year")
-    plt.grid(True)
-    plt.tight_layout()
-    
-    return fig
+    val_arr = ratio_df[ratio_name].dropna()
+    print(val_arr)
+    if not val_arr.empty:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        val_arr.plot(ax=ax, marker='o', linewidth=2)
+        plt.title(f"{ratio_name} Trend")
+        plt.ylabel(ratio_name)
+        plt.xlabel("Year")
+        plt.grid(True)
+        plt.tight_layout()
+        
+        return fig
+    return None
 
 # Main function to run the dashboard
 def main():
@@ -239,6 +244,7 @@ def main():
                 
                 for i, ratio in enumerate(trend_ratios):
                     if ratio in ratios["profitability"].columns:
+                        print(f"ratio: {ratio}")
                         with col1 if i % 2 == 0 else col2:
                             fig = create_trend_graph(ratios["profitability"], ratio)
                             if fig:
