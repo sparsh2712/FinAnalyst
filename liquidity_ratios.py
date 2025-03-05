@@ -1,199 +1,203 @@
 """
-Liquidity Ratios Analysis Script
+Liquidity Ratios Analysis Module
 
-This script calculates and visualizes liquidity ratios for a given company
-and benchmarks against industry averages.
+This module calculates liquidity ratios using simplified data structures.
 
 Ratios calculated:
 1. Current Ratio (Trend Graph)
 2. Quick Ratio (Trend Graph)
 3. Cash Ratio (Single Number)
-
-Usage:
-    python liquidity_ratios.py --ticker AAPL --period 5y --benchmark MSFT GOOGL
-    
-    Required arguments:
-        --ticker: Company ticker symbol
-        --period: Analysis period (e.g., 5y for 5 years)
-    
-    Optional arguments:
-        --benchmark: List of peer companies for benchmarking
-        --output: Output directory for saving visualizations (default: ./output)
 """
 
 import os
-import argparse
+import logging
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import yfinance as yf
-from datetime import datetime, timedelta
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Set plotting style
 sns.set_theme(style="whitegrid")
 plt.rcParams['figure.figsize'] = (12, 8)
 
-def parse_arguments():
-    """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Calculate liquidity ratios")
-    parser.add_argument("--ticker", required=True, help="Company ticker symbol")
-    parser.add_argument("--period", default="5y", help="Analysis period (e.g., 5y for 5 years)")
-    parser.add_argument("--benchmark", nargs="+", default=[], help="List of peer companies for benchmarking")
-    parser.add_argument("--output", default="./output", help="Output directory for saving visualizations")
-    return parser.parse_args()
-
-def fetch_financial_data(ticker, period="5y"):
-    """Fetch financial data for a given ticker."""
-    # Get the ticker object
-    tick = yf.Ticker(ticker)
-    
-    # Fetch financial statements
-    balance_sheet = tick.balance_sheet
-    
-    # Transpose to have dates as index
-    balance_sheet = balance_sheet.T
-    
-    # Get stock price data for the period
-    end_date = datetime.now()
-    if period.endswith('y'):
-        years = int(period[:-1])
-        start_date = end_date - timedelta(days=365 * years)
-    else:
-        # Default to 5 years
-        start_date = end_date - timedelta(days=365 * 5)
-    
-    stock_data = yf.download(ticker, start=start_date, end=end_date)
-    
-    return {
-        'balance_sheet': balance_sheet,
-        'stock_data': stock_data,
-        'info': tick.info
-    }
-
 def calculate_liquidity_ratios(data):
-    """Calculate liquidity ratios from financial data."""
-    print("calcualting liquidity ratio")
+    """
+    Calculate liquidity ratios from financial data.
+    
+    Args:
+        data (dict): Dictionary containing financial data
+        
+    Returns:
+        dict: Dictionary with dates as keys and calculated ratios as values
+    """
+    logger.info("Calculating liquidity ratios")
+    
+    # Extract data
     balance_sheet = data['balance_sheet']
     
-    # Calculate ratios
-    results = pd.DataFrame(index=balance_sheet.index)
+    # Initialize results dictionary
+    results = {}
     
-    # Current Ratio = Current Assets / Current Liabilities
-    if 'Total Current Assets' in balance_sheet.columns and 'Total Current Liabilities' in balance_sheet.columns:
-        results['Current Ratio'] = balance_sheet['Total Current Assets'] / balance_sheet['Total Current Liabilities']
+    # Process each financial period
+    for date_str, balance_data in balance_sheet.items():
+        # Initialize ratios dictionary for this period
+        ratios = {}
+        
+        # Current Ratio = Current Assets / Current Liabilities
+        if ('Total Current Assets' in balance_data and 
+            'Total Current Liabilities' in balance_data):
+            
+            current_assets = balance_data['Total Current Assets']
+            current_liabilities = balance_data['Total Current Liabilities']
+            
+            if (current_assets is not None and current_liabilities is not None and 
+                current_liabilities != 0):
+                ratios['Current Ratio'] = current_assets / current_liabilities
+            else:
+                ratios['Current Ratio'] = None
+        
+        # Quick Ratio = (Current Assets - Inventory) / Current Liabilities
+        if ('Total Current Assets' in balance_data and 
+            'Inventory' in balance_data and 
+            'Total Current Liabilities' in balance_data):
+            
+            current_assets = balance_data['Total Current Assets']
+            inventory = balance_data['Inventory']
+            current_liabilities = balance_data['Total Current Liabilities']
+            
+            if (current_assets is not None and inventory is not None and 
+                current_liabilities is not None and current_liabilities != 0):
+                ratios['Quick Ratio'] = (current_assets - inventory) / current_liabilities
+            else:
+                ratios['Quick Ratio'] = None
+        
+        # Cash Ratio = Cash & Cash Equivalents / Current Liabilities
+        if ('Cash And Cash Equivalents' in balance_data and 
+            'Total Current Liabilities' in balance_data):
+            
+            cash = balance_data['Cash And Cash Equivalents']
+            current_liabilities = balance_data['Total Current Liabilities']
+            
+            if (cash is not None and current_liabilities is not None and 
+                current_liabilities != 0):
+                ratios['Cash Ratio'] = cash / current_liabilities
+            else:
+                ratios['Cash Ratio'] = None
+        
+        # Add ratios for this period to results
+        results[date_str] = ratios
     
-    # Quick Ratio = (Current Assets - Inventory) / Current Liabilities
-    if ('Total Current Assets' in balance_sheet.columns and 
-        'Inventory' in balance_sheet.columns and 
-        'Total Current Liabilities' in balance_sheet.columns):
-        results['Quick Ratio'] = (balance_sheet['Total Current Assets'] - balance_sheet['Inventory']) / balance_sheet['Total Current Liabilities']
-    
-    # Cash Ratio = Cash & Cash Equivalents / Current Liabilities
-    if ('Cash And Cash Equivalents' in balance_sheet.columns and 
-        'Total Current Liabilities' in balance_sheet.columns):
-        results['Cash Ratio'] = balance_sheet['Cash And Cash Equivalents'] / balance_sheet['Total Current Liabilities']
-    
-    print("sucesfully calculated liquidity ratio")
+    logger.info("Successfully calculated liquidity ratios")
     return results
 
-def plot_trend_graphs(company_ratios, benchmark_ratios=None, output_dir="./output"):
+def convert_ratios_to_dataframe(ratios_dict):
     """
-    Plot trend graphs for specified ratios.
+    Convert ratios dictionary to a pandas DataFrame.
     
     Args:
-        company_ratios: DataFrame with company ratios
-        benchmark_ratios: Dictionary of DataFrames with benchmark companies' ratios
-        output_dir: Directory to save the plots
+        ratios_dict (dict): Dictionary with dates as keys and calculated ratios as values
+        
+    Returns:
+        pd.DataFrame: DataFrame with dates as index and ratios as columns
     """
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
+    # Create list of dictionaries
+    data = []
+    for date_str, ratios in ratios_dict.items():
+        row = {'Date': date_str, **ratios}
+        data.append(row)
     
-    # List of ratios to plot as trend graphs
-    trend_ratios = ['Current Ratio', 'Quick Ratio']
+    # Create DataFrame
+    df = pd.DataFrame(data)
     
-    for ratio in trend_ratios:
-        if ratio in company_ratios.columns:
-            fig, ax = plt.subplots(figsize=(12, 8))
-            
-            # Plot company data
-            company_ratios[ratio].plot(ax=ax, marker='o', label=f"Company")
-            
-            # Plot benchmark companies data
-            if benchmark_ratios:
-                for company, ratios in benchmark_ratios.items():
-                    if ratio in ratios.columns:
-                        ratios[ratio].plot(ax=ax, linestyle='--', marker='x', label=f"{company}")
-            
-            plt.title(f"{ratio} Trend (Past 5 Years)")
-            plt.ylabel(ratio)
-            plt.xlabel("Year")
-            plt.legend()
-            plt.tight_layout()
-            
-            # Save the plot
-            plt.savefig(os.path.join(output_dir, f"{ratio.replace(' ', '_')}.png"))
-            plt.close()
+    # Convert Date column to datetime and set as index
+    if 'Date' in df.columns:
+        df['Date'] = pd.to_datetime(df['Date'])
+        df = df.sort_values('Date')
+        df = df.set_index('Date')
+    
+    return df
 
-def display_single_numbers(company_ratios, benchmark_ratios=None):
+def plot_trend_graph(ratio_df, ratio_name, company_name, benchmark_dfs=None, output_dir=None):
     """
-    Display single number ratios with benchmarking.
+    Plot trend graph for a specific ratio.
     
     Args:
-        company_ratios: DataFrame with company ratios
-        benchmark_ratios: Dictionary of DataFrames with benchmark companies' ratios
+        ratio_df (pd.DataFrame): DataFrame with ratios for the main company
+        ratio_name (str): Name of ratio to plot
+        company_name (str): Name of the main company
+        benchmark_dfs (dict, optional): Dictionary with company names as keys and DataFrames as values
+        output_dir (str, optional): Directory to save the plot
     """
-    # List of ratios to display as single numbers
-    single_ratios = ['Cash Ratio']
+    if ratio_name not in ratio_df.columns:
+        logger.warning(f"Ratio '{ratio_name}' not found in DataFrame")
+        return
     
-    # Create a table for the latest values
-    latest_values = {}
+    fig, ax = plt.subplots(figsize=(12, 8))
     
-    # Get the latest value for the company
-    for ratio in single_ratios:
-        if ratio in company_ratios.columns:
-            latest_values['Company'] = company_ratios[ratio].iloc[-1]
+    # Plot main company data
+    ratio_df[ratio_name].plot(ax=ax, marker='o', linewidth=2, label=company_name)
     
-    # Get the latest values for benchmark companies
-    if benchmark_ratios:
-        for company, ratios in benchmark_ratios.items():
-            for ratio in single_ratios:
-                if ratio in ratios.columns:
-                    latest_values[company] = ratios[ratio].iloc[-1]
+    # Plot benchmark data if available
+    if benchmark_dfs:
+        for name, df in benchmark_dfs.items():
+            if ratio_name in df.columns:
+                df[ratio_name].plot(ax=ax, linestyle='--', marker='x', label=name)
     
-    # Display as a DataFrame
-    latest_df = pd.DataFrame(latest_values, index=single_ratios)
-    print("\nSingle Number Ratios (Latest Values):")
-    print(latest_df)
+    plt.title(f"{ratio_name} - {company_name} vs Benchmarks")
+    plt.ylabel(ratio_name)
+    plt.xlabel("Year")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    
+    # Save plot if output directory is provided
+    if output_dir:
+        filename = f"{ratio_name.replace(' ', '_')}.png"
+        filepath = os.path.join(output_dir, filename)
+        plt.savefig(filepath)
+        logger.info(f"Plot saved to {filepath}")
+    
+    plt.close()
+
+def display_latest_values(ratio_df, ratio_name, company_name, benchmark_dfs=None):
+    """
+    Display latest values for a specific ratio across companies.
+    
+    Args:
+        ratio_df (pd.DataFrame): DataFrame with ratios for the main company
+        ratio_name (str): Name of ratio to display
+        company_name (str): Name of the main company
+        benchmark_dfs (dict, optional): Dictionary with company names as keys and DataFrames as values
+        
+    Returns:
+        pd.DataFrame: DataFrame with latest values
+    """
+    if ratio_name not in ratio_df.columns:
+        logger.warning(f"Ratio '{ratio_name}' not found in DataFrame")
+        return None
+    
+    # Get latest value for main company
+    latest_value = ratio_df[ratio_name].iloc[-1] if not ratio_df.empty else None
+    
+    # Create dictionary of latest values
+    latest_values = {company_name: latest_value}
+    
+    # Add benchmark values if available
+    if benchmark_dfs:
+        for name, df in benchmark_dfs.items():
+            if ratio_name in df.columns and not df.empty:
+                latest_values[name] = df[ratio_name].iloc[-1]
+            else:
+                latest_values[name] = None
+    
+    # Create DataFrame
+    latest_df = pd.DataFrame({ratio_name: latest_values}).T
     
     return latest_df
-
-def main():
-    """Main function to run the liquidity ratio analysis."""
-    args = parse_arguments()
-    
-    print(f"\nAnalyzing liquidity ratios for {args.ticker}...")
-    
-    # Fetch data for the main company
-    company_data = fetch_financial_data(args.ticker, args.period)
-    company_ratios = calculate_liquidity_ratios(company_data)
-    
-    # Fetch data for benchmark companies
-    benchmark_ratios = {}
-    for benchmark in args.benchmark:
-        print(f"Fetching data for benchmark company: {benchmark}")
-        benchmark_data = fetch_financial_data(benchmark, args.period)
-        benchmark_ratios[benchmark] = calculate_liquidity_ratios(benchmark_data)
-    
-    # Plot trend graphs
-    print("Generating trend graphs...")
-    plot_trend_graphs(company_ratios, benchmark_ratios, args.output)
-    
-    # Display single number ratios
-    print("Calculating single number ratios...")
-    display_single_numbers(company_ratios, benchmark_ratios)
-    
-    print(f"\nAnalysis complete. Visualizations saved to {args.output} directory.")
-
-if __name__ == "__main__":
-    main()

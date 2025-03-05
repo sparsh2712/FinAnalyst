@@ -1,8 +1,7 @@
 """
-Profitability Ratios Analysis Script
+Profitability Ratios Analysis Module
 
-This script calculates and visualizes profitability ratios for a given company
-and benchmarks against industry averages.
+This module calculates profitability ratios using simplified data structures.
 
 Ratios calculated:
 1. Net Profit Margin (%)
@@ -11,242 +10,233 @@ Ratios calculated:
 4. Return on Assets (ROA) (%)
 5. Return on Capital Employed (ROCE) (%)
 6. Earnings Per Share (EPS)
-
-Usage:
-    python profitability_ratios.py --ticker AAPL --period 5y --benchmark MSFT GOOGL
-    
-    Required arguments:
-        --ticker: Company ticker symbol
-        --period: Analysis period (e.g., 5y for 5 years)
-    
-    Optional arguments:
-        --benchmark: List of peer companies for benchmarking
-        --market_index: Market index for comparison (default: ^GSPC for S&P 500)
-        --output: Output directory for saving visualizations (default: ./output)
 """
 
 import os
-import argparse
+import logging
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-import yfinance as yf
-from datetime import datetime, timedelta
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Set plotting style
 sns.set_theme(style="whitegrid")
 plt.rcParams['figure.figsize'] = (12, 8)
 
-def parse_arguments():
-    """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Calculate profitability ratios")
-    parser.add_argument("--ticker", required=True, help="Company ticker symbol")
-    parser.add_argument("--period", default="5y", help="Analysis period (e.g., 5y for 5 years)")
-    parser.add_argument("--benchmark", nargs="+", default=[], help="List of peer companies for benchmarking")
-    parser.add_argument("--market_index", default="^GSPC", help="Market index for comparison")
-    parser.add_argument("--output", default="./output", help="Output directory for saving visualizations")
-    return parser.parse_args()
-
-def fetch_financial_data(ticker, period="5y"):
-    """Fetch financial data for a given ticker."""
-    # Get the ticker object
-    print("fetching financial data")
-    ticker = f"{ticker}.NS"
-    tick = yf.Ticker(ticker)
-    
-    # Fetch financial statements
-    income_stmt = tick.financials
-    balance_sheet = tick.balance_sheet
-    
-    # Transpose to have dates as index
-    income_stmt = income_stmt.T
-    balance_sheet = balance_sheet.T
-    
-    # Get stock price data for the period
-    end_date = datetime.now()
-    if period.endswith('y'):
-        years = int(period[:-1])
-        start_date = end_date - timedelta(days=365 * years)
-    else:
-        # Default to 5 years
-        start_date = end_date - timedelta(days=365 * 5)
-    
-    stock_data = yf.download(ticker, start=start_date, end=end_date)
-    print("succesfully fetched financial data")
-    return {
-        'income_stmt': income_stmt,
-        'balance_sheet': balance_sheet,
-        'stock_data': stock_data,
-        'info': tick.info
-    }
-
 def calculate_profitability_ratios(data):
-    """Calculate profitability ratios from financial data."""
-    print("calculating profitability ratios")
+    """
+    Calculate profitability ratios from financial data.
+    
+    Args:
+        data (dict): Dictionary containing financial data
+        
+    Returns:
+        dict: Dictionary with dates as keys and calculated ratios as values
+    """
+    logger.info("Calculating profitability ratios")
+    
+    # Extract data
     income_stmt = data['income_stmt']
     balance_sheet = data['balance_sheet']
+    info = data['info']
     
-    # Calculate ratios
-    results = pd.DataFrame(index=income_stmt.index)
+    # Initialize results dictionary
+    results = {}
     
-    # Net Profit Margin (%) = (Net Income / Total Revenue) * 100
-    if 'Net Income' in income_stmt.columns and 'Total Revenue' in income_stmt.columns:
-        results['Net Profit Margin (%)'] = (income_stmt['Net Income'] / income_stmt['Total Revenue']) * 100
+    # Process each financial period
+    for date_str, income_data in income_stmt.items():
+        # Skip if we don't have matching balance sheet data
+        if date_str not in balance_sheet:
+            continue
+        
+        balance_data = balance_sheet[date_str]
+        
+        # Initialize ratios dictionary for this period
+        ratios = {}
+        
+        # Net Profit Margin (%) = (Net Income / Total Revenue) * 100
+        if 'Net Income' in income_data and 'Total Revenue' in income_data:
+            net_income = income_data['Net Income']
+            total_revenue = income_data['Total Revenue']
+            
+            if net_income is not None and total_revenue is not None and total_revenue != 0:
+                ratios['Net Profit Margin (%)'] = (net_income / total_revenue) * 100
+            else:
+                ratios['Net Profit Margin (%)'] = None
+        
+        # Operating Profit Margin (%) = (Operating Income / Total Revenue) * 100
+        if 'Operating Income' in income_data and 'Total Revenue' in income_data:
+            operating_income = income_data['Operating Income']
+            total_revenue = income_data['Total Revenue']
+            
+            if operating_income is not None and total_revenue is not None and total_revenue != 0:
+                ratios['Operating Profit Margin (%)'] = (operating_income / total_revenue) * 100
+            else:
+                ratios['Operating Profit Margin (%)'] = None
+        
+        # Return on Equity (ROE) (%) = (Net Income / Total Stockholder Equity) * 100
+        if 'Net Income' in income_data and 'Total Stockholder Equity' in balance_data:
+            net_income = income_data['Net Income']
+            total_equity = balance_data['Total Stockholder Equity']
+            
+            if net_income is not None and total_equity is not None and total_equity != 0:
+                ratios['Return on Equity (%)'] = (net_income / total_equity) * 100
+            else:
+                ratios['Return on Equity (%)'] = None
+        
+        # Return on Assets (ROA) (%) = (Net Income / Total Assets) * 100
+        if 'Net Income' in income_data and 'Total Assets' in balance_data:
+            net_income = income_data['Net Income']
+            total_assets = balance_data['Total Assets']
+            
+            if net_income is not None and total_assets is not None and total_assets != 0:
+                ratios['Return on Assets (%)'] = (net_income / total_assets) * 100
+            else:
+                ratios['Return on Assets (%)'] = None
+        
+        # Return on Capital Employed (ROCE) (%)
+        # ROCE = EBIT / Capital Employed
+        # Capital Employed = Total Assets - Current Liabilities
+        if ('Operating Income' in income_data and 
+            'Total Assets' in balance_data and 
+            'Total Current Liabilities' in balance_data):
+            
+            ebit = income_data['Operating Income']  # EBIT is often reported as Operating Income
+            total_assets = balance_data['Total Assets']
+            current_liabilities = balance_data['Total Current Liabilities']
+            
+            capital_employed = total_assets - current_liabilities
+            
+            if (ebit is not None and capital_employed is not None and 
+                capital_employed != 0 and capital_employed > 0):
+                ratios['Return on Capital Employed (%)'] = (ebit / capital_employed) * 100
+            else:
+                ratios['Return on Capital Employed (%)'] = None
+        
+        # Earnings Per Share (EPS)
+        if 'Net Income' in income_data:
+            net_income = income_data['Net Income']
+            shares_outstanding = info.get('sharesOutstanding', None)
+            
+            if net_income is not None and shares_outstanding is not None and shares_outstanding > 0:
+                ratios['EPS (₹ per share)'] = net_income / shares_outstanding
+            else:
+                ratios['EPS (₹ per share)'] = None
+        
+        # Add ratios for this period to results
+        results[date_str] = ratios
     
-    # Operating Profit Margin (%) = (Operating Income / Total Revenue) * 100
-    if 'Operating Income' in income_stmt.columns and 'Total Revenue' in income_stmt.columns:
-        results['Operating Profit Margin (%)'] = (income_stmt['Operating Income'] / income_stmt['Total Revenue']) * 100
-    
-    # Return on Equity (ROE) (%) = (Net Income / Total Stockholder Equity) * 100
-    if 'Net Income' in income_stmt.columns and 'Total Stockholder Equity' in balance_sheet.columns:
-        results['Return on Equity (%)'] = (income_stmt['Net Income'] / balance_sheet['Total Stockholder Equity']) * 100
-    
-    # Return on Assets (ROA) (%) = (Net Income / Total Assets) * 100
-    if 'Net Income' in income_stmt.columns and 'Total Assets' in balance_sheet.columns:
-        results['Return on Assets (%)'] = (income_stmt['Net Income'] / balance_sheet['Total Assets']) * 100
-    
-    # Return on Capital Employed (ROCE) (%)
-    # ROCE = EBIT / Capital Employed
-    # Capital Employed = Total Assets - Current Liabilities
-    if ('Operating Income' in income_stmt.columns and 
-        'Total Assets' in balance_sheet.columns and 
-        'Total Current Liabilities' in balance_sheet.columns):
-        ebit = income_stmt['Operating Income']  # EBIT is often reported as Operating Income
-        capital_employed = balance_sheet['Total Assets'] - balance_sheet['Total Current Liabilities']
-        results['Return on Capital Employed (%)'] = (ebit / capital_employed) * 100
-    
-    # Earnings Per Share (EPS)
-    results['EPS (₹ per share)'] = data['info'].get('trailingEPS', np.nan)
-    print("succesfully calculated profitability ratios")
+    logger.info("Successfully calculated profitability ratios")
     return results
 
-def plot_trend_graphs(company_ratios, benchmark_ratios=None, market_ratios=None, output_dir="./output"):
+def convert_ratios_to_dataframe(ratios_dict):
     """
-    Plot trend graphs for specified ratios.
+    Convert ratios dictionary to a pandas DataFrame.
     
     Args:
-        company_ratios: DataFrame with company ratios
-        benchmark_ratios: Dictionary of DataFrames with benchmark companies' ratios
-        market_ratios: DataFrame with market average ratios
-        output_dir: Directory to save the plots
+        ratios_dict (dict): Dictionary with dates as keys and calculated ratios as values
+        
+    Returns:
+        pd.DataFrame: DataFrame with dates as index and ratios as columns
     """
-    # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
+    # Create list of dictionaries
+    data = []
+    for date_str, ratios in ratios_dict.items():
+        row = {'Date': date_str, **ratios}
+        data.append(row)
     
-    # List of ratios to plot as trend graphs
-    trend_ratios = [
-        'Net Profit Margin (%)', 
-        'Operating Profit Margin (%)', 
-        'Return on Equity (%)', 
-        'Return on Assets (%)',
-        'Return on Capital Employed (%)'
-    ]
+    # Create DataFrame
+    df = pd.DataFrame(data)
     
-    for ratio in trend_ratios:
-        if ratio in company_ratios.columns:
-            fig, ax = plt.subplots(figsize=(12, 8))
-            
-            # Plot company data
-            company_ratios[ratio].plot(ax=ax, marker='o', label=f"Company")
-            
-            # Plot benchmark companies data
-            if benchmark_ratios:
-                for company, ratios in benchmark_ratios.items():
-                    if ratio in ratios.columns:
-                        ratios[ratio].plot(ax=ax, linestyle='--', marker='x', label=f"{company}")
-            
-            # Plot market average if available
-            if market_ratios is not None and ratio in market_ratios.columns:
-                market_ratios[ratio].plot(ax=ax, linestyle='-.', color='black', label="Market Average")
-            
-            plt.title(f"{ratio} Trend (Past 5 Years)")
-            plt.ylabel(ratio)
-            plt.xlabel("Year")
-            plt.legend()
-            plt.tight_layout()
-            
-            # Save the plot
-            plt.savefig(os.path.join(output_dir, f"{ratio.replace(' ', '_').replace('(%)', 'Pct')}.png"))
-            plt.close()
+    # Convert Date column to datetime and set as index
+    if 'Date' in df.columns:
+        df['Date'] = pd.to_datetime(df['Date'])
+        df = df.sort_values('Date')
+        df = df.set_index('Date')
+    
+    return df
 
-def display_single_numbers(company_ratios, benchmark_ratios=None, market_ratios=None):
+def plot_trend_graph(ratio_df, ratio_name, company_name, benchmark_dfs=None, output_dir=None):
     """
-    Display single number ratios with benchmarking.
+    Plot trend graph for a specific ratio.
     
     Args:
-        company_ratios: DataFrame with company ratios
-        benchmark_ratios: Dictionary of DataFrames with benchmark companies' ratios
-        market_ratios: DataFrame with market average ratios
+        ratio_df (pd.DataFrame): DataFrame with ratios for the main company
+        ratio_name (str): Name of ratio to plot
+        company_name (str): Name of the main company
+        benchmark_dfs (dict, optional): Dictionary with company names as keys and DataFrames as values
+        output_dir (str, optional): Directory to save the plot
     """
-    # List of ratios to display as single numbers
-    single_ratios = ['EPS (₹ per share)']
+    if ratio_name not in ratio_df.columns:
+        logger.warning(f"Ratio '{ratio_name}' not found in DataFrame")
+        return
     
-    # Create a table for the latest values
-    latest_values = {}
+    fig, ax = plt.subplots(figsize=(12, 8))
     
-    # Get the latest value for the company
-    for ratio in single_ratios:
-        if ratio in company_ratios.columns:
-            latest_values['Company'] = company_ratios[ratio].iloc[-1]
+    # Plot main company data
+    ratio_df[ratio_name].plot(ax=ax, marker='o', linewidth=2, label=company_name)
     
-    # Get the latest values for benchmark companies
-    if benchmark_ratios:
-        for company, ratios in benchmark_ratios.items():
-            for ratio in single_ratios:
-                if ratio in ratios.columns:
-                    latest_values[company] = ratios[ratio].iloc[-1]
+    # Plot benchmark data if available
+    if benchmark_dfs:
+        for name, df in benchmark_dfs.items():
+            if ratio_name in df.columns:
+                df[ratio_name].plot(ax=ax, linestyle='--', marker='x', label=name)
     
-    # Get the market average
-    if market_ratios is not None:
-        for ratio in single_ratios:
-            if ratio in market_ratios.columns:
-                latest_values['Market Average'] = market_ratios[ratio].iloc[-1]
+    plt.title(f"{ratio_name} - {company_name} vs Benchmarks")
+    plt.ylabel(ratio_name)
+    plt.xlabel("Year")
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
     
-    # Display as a DataFrame
-    latest_df = pd.DataFrame(latest_values, index=single_ratios)
-    print("\nSingle Number Ratios (Latest Values):")
-    print(latest_df)
+    # Save plot if output directory is provided
+    if output_dir:
+        filename = f"{ratio_name.replace(' ', '_').replace('(', '').replace(')', '').replace('%', 'Pct')}.png"
+        filepath = os.path.join(output_dir, filename)
+        plt.savefig(filepath)
+        logger.info(f"Plot saved to {filepath}")
+    
+    plt.close()
+
+def display_latest_values(ratio_df, ratio_name, company_name, benchmark_dfs=None):
+    """
+    Display latest values for a specific ratio across companies.
+    
+    Args:
+        ratio_df (pd.DataFrame): DataFrame with ratios for the main company
+        ratio_name (str): Name of ratio to display
+        company_name (str): Name of the main company
+        benchmark_dfs (dict, optional): Dictionary with company names as keys and DataFrames as values
+        
+    Returns:
+        pd.DataFrame: DataFrame with latest values
+    """
+    if ratio_name not in ratio_df.columns:
+        logger.warning(f"Ratio '{ratio_name}' not found in DataFrame")
+        return None
+    
+    # Get latest value for main company
+    latest_value = ratio_df[ratio_name].iloc[-1] if not ratio_df.empty else None
+    
+    # Create dictionary of latest values
+    latest_values = {company_name: latest_value}
+    
+    # Add benchmark values if available
+    if benchmark_dfs:
+        for name, df in benchmark_dfs.items():
+            if ratio_name in df.columns and not df.empty:
+                latest_values[name] = df[ratio_name].iloc[-1]
+            else:
+                latest_values[name] = None
+    
+    # Create DataFrame
+    latest_df = pd.DataFrame({ratio_name: latest_values}).T
     
     return latest_df
-
-def main():
-    """Main function to run the profitability ratio analysis."""
-    args = parse_arguments()
-    
-    print(f"\nAnalyzing profitability ratios for {args.ticker}...")
-    
-    # Fetch data for the main company
-    company_data = fetch_financial_data(args.ticker, args.period)
-    company_ratios = calculate_profitability_ratios(company_data)
-    
-    # Fetch data for benchmark companies
-    benchmark_ratios = {}
-    for benchmark in args.benchmark:
-        print(f"Fetching data for benchmark company: {benchmark}")
-        benchmark_data = fetch_financial_data(benchmark, args.period)
-        benchmark_ratios[benchmark] = calculate_profitability_ratios(benchmark_data)
-    
-    # Fetch market index data
-    market_data = None
-    market_ratios = None
-    if args.market_index:
-        print(f"Fetching data for market index: {args.market_index}")
-        try:
-            market_data = fetch_financial_data(args.market_index, args.period)
-            market_ratios = calculate_profitability_ratios(market_data)
-        except Exception as e:
-            print(f"Warning: Failed to fetch market index data: {e}")
-    
-    # Plot trend graphs
-    print("Generating trend graphs...")
-    plot_trend_graphs(company_ratios, benchmark_ratios, market_ratios, args.output)
-    
-    # Display single number ratios
-    print("Calculating single number ratios...")
-    display_single_numbers(company_ratios, benchmark_ratios, market_ratios)
-    
-    print(f"\nAnalysis complete. Visualizations saved to {args.output} directory.")
-
-if __name__ == "__main__":
-    main()
