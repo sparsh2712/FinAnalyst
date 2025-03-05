@@ -41,14 +41,3 @@ Combined Dashboard
 Integrates all the individual ratio scripts into one comprehensive system
 Creates a consolidated HTML report with all ratios, trends, and benchmarks
 
-
-Usage Guide
-
-Detailed instructions on how to use each script
-Example commands and troubleshooting tips
-
-
-
-How to Use the Scripts
-Each script can be run independently with command-line arguments:
-bash
