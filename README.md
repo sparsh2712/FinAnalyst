@@ -13,9 +13,6 @@ The system should compute the following financial ratios, categorized by type. S
 - **Return on Equity (ROE) (%)** = (Net Profit / Shareholders' Equity) \* 100
 - **Return on Assets (ROA) (%)** = (Net Profit / Total Assets) \* 100
 - **Return on Capital Employed (ROCE) (%)** = (EBIT / Capital Employed) \* 100
-
-#### Single Numbers:
-
 - **Earnings Per Share (EPS) (₹ per share)** = Net Profit / Total Outstanding Shares
 
 ### 2. Liquidity Ratios
@@ -24,9 +21,6 @@ The system should compute the following financial ratios, categorized by type. S
 
 - **Current Ratio** = Current Assets / Current Liabilities
 - **Quick Ratio** = (Current Assets - Inventory) / Current Liabilities
-
-#### Single Numbers:
-
 - **Cash Ratio** = Cash & Cash Equivalents / Current Liabilities
 
 ### 3. Solvency Ratios
@@ -35,9 +29,6 @@ The system should compute the following financial ratios, categorized by type. S
 
 - **Debt-to-Equity (D/E) Ratio** = Total Debt / Shareholders' Equity
 - **Interest Coverage Ratio** = EBIT / Interest Expense
-
-#### Single Numbers:
-
 - **Debt-to-Asset Ratio** = Total Debt / Total Assets
 
 ### 4. Efficiency Ratios
@@ -47,9 +38,6 @@ The system should compute the following financial ratios, categorized by type. S
 - **Asset Turnover Ratio** = Revenue / Average Total Assets
 - **Inventory Turnover Ratio** = Cost of Goods Sold / Average Inventory
 - **Receivables Turnover Ratio** = Revenue / Average Accounts Receivable
-
-#### Single Numbers:
-
 - **Days Sales Outstanding (DSO)** = (Accounts Receivable / Revenue) \* 365
 
 ### 5. Valuation Ratios
@@ -58,9 +46,6 @@ The system should compute the following financial ratios, categorized by type. S
 
 - **Price-to-Earnings (P/E) Ratio** = Stock Price / Earnings Per Share
 - **Price-to-Book (P/B) Ratio** = Stock Price / Book Value Per Share
-
-#### Single Numbers:
-
 - **Enterprise Value to EBITDA (EV/EBITDA)** = (Market Cap + Debt - Cash) / EBITDA
 
 ### 6. Market Performance Ratios
@@ -68,11 +53,11 @@ The system should compute the following financial ratios, categorized by type. S
 #### Trend Graphs (Past 5 Years):
 
 - **Dividend Yield (%)** = (Dividend Per Share / Stock Price) \* 100
-- **Beta (Stock Volatility)** = Measures volatility relative to the market
+- **Market Capitalization** = Stock Price \* Total Shares Outstanding
 
 #### Single Numbers:
 
-- **Market Capitalization** = Stock Price \* Total Shares Outstanding
+- **Beta (Stock Volatility)** = Measures volatility relative to the market
 
 ## Visualization Requirements
 
