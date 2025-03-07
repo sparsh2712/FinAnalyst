@@ -81,7 +81,7 @@ def get_yearly_stock_price(ticker, duration):
     for date, row in history.iterrows():
         year = date.year
         if year not in prices:  # Take the last available price for each year
-            prices[year] = row["Close"]
+            prices[str(year)] = row["Close"]
     
     return prices
 
