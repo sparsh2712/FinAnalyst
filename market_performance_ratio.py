@@ -17,6 +17,9 @@ class MarketPerformanceRatios:
     
     def dividend_yield(self):
         """Calculates Dividend Yield = (Dividend Per Share / Stock Price) * 100."""
+        if not self.stock_price:
+            return {}
+        
         ratios = {}
         for year in self.stock_price:
             yearly_dividends = self.dividends[self.dividends['Date'].dt.year == int(year)]['Dividends'].sum()
@@ -29,10 +32,13 @@ class MarketPerformanceRatios:
     
     def beta(self):
         """Returns Beta (Stock Volatility)."""
-        return self.stock_info.get("beta")
+        return self.stock_info.get("beta", None)
     
     def market_capitalization(self):
         """Calculates Market Capitalization = Stock Price * Total Shares Outstanding."""
+        if not self.balance_sheet or not self.stock_price:
+            return {}
+        
         ratios = {}
         for year in self.balance_sheet:
             stock_price = self.stock_price.get(year)

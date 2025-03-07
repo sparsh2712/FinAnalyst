@@ -15,7 +15,7 @@ class LiquidityRatios:
     def current_ratio(self):
         """Calculates and plots Current Ratio = Current Assets / Current Liabilities."""
         if not self.balance_sheet:
-            return
+            return {}
         
         current_ratio = {}
         for year, data in self.balance_sheet.items():
@@ -25,13 +25,13 @@ class LiquidityRatios:
             if current_assets is not None and current_liabilities:
                 current_ratio[year] = current_assets / current_liabilities
         
-        return ratios
+        return current_ratio
         # plot_ratio(current_ratio, "Current Ratio", "Ratio")
     
     def quick_ratio(self):
         """Calculates and plots Quick Ratio = (Current Assets - Inventory) / Current Liabilities."""
         if not self.balance_sheet:
-            return
+            return {}
         
         quick_ratio = {}
         for year, data in self.balance_sheet.items():
@@ -42,7 +42,7 @@ class LiquidityRatios:
             if current_assets is not None and current_liabilities:
                 quick_ratio[year] = (current_assets - inventory) / current_liabilities
         
-        return ratios
+        return quick_ratio
         # plot_ratio(quick_ratio, "Quick Ratio", "Ratio")
     
     def cash_ratio(self):
@@ -58,7 +58,7 @@ class LiquidityRatios:
             if cash_equivalents is not None and current_liabilities:
                 cash_ratio[year] = cash_equivalents / current_liabilities
         
-        return ratios
+        return cash_ratio
         # plot_ratio(cash_ratio, "Cash Ratio", "Ratio")
 
 if __name__ == "__main__":

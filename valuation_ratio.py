@@ -10,15 +10,18 @@ class ValuationRatios:
         self.data = data
         self.income_statement = data.get("income_statement", {})
         self.balance_sheet = data.get("balance_sheet", {})
-        self.stock_prices = data.get("stock_prices", {})  # Stock prices now part of data
+        self.stock_prices = data.get("stock_prices", {})
 
     def pe_ratio(self):
         """Calculates and plots Price-to-Earnings (P/E) Ratio = Stock Price / Earnings Per Share."""
+        if not self.balance_sheet or not self.stock_prices:
+            return {}
+        
         ratios = {}
         for year in self.income_statement:
-            stock_price = self.stock_prices.get(int(year))
+            stock_price = self.stock_prices.get(year)
             eps = self.income_statement.get(year, {}).get("Diluted EPS")  # Correct key
-            
+
             if stock_price is not None and eps is not None:
                 ratios[year] = stock_price / eps
         
@@ -27,9 +30,11 @@ class ValuationRatios:
 
     def pb_ratio(self):
         """Calculates and plots Price-to-Book (P/B) Ratio = Stock Price / Book Value Per Share."""
+        if not self.balance_sheet or not self.stock_prices:
+            return {}
         ratios = {}
         for year in self.balance_sheet:
-            stock_price = self.stock_prices.get(int(year))
+            stock_price = self.stock_prices.get(year)
             total_equity = self.balance_sheet.get(year, {}).get("Stockholders Equity")  # Correct key
             shares_outstanding = self.balance_sheet.get(year, {}).get("Ordinary Shares Number")  # Correct key
 
@@ -42,9 +47,12 @@ class ValuationRatios:
 
     def ev_ebitda_ratio(self):
         """Calculates and plots EV/EBITDA Ratio = (Market Cap + Debt - Cash) / EBITDA."""
+        if not self.income_statement or not self.balance_sheet or not self.stock_prices:
+            return {}
+        
         ratios = {}
         for year in self.income_statement:
-            stock_price = self.stock_prices.get(int(year))
+            stock_price = self.stock_prices.get(year)
             shares_outstanding = self.balance_sheet.get(year, {}).get("Ordinary Shares Number")  # Correct key
             total_debt = self.balance_sheet.get(year, {}).get("Total Debt")  # Correct key
             cash = self.balance_sheet.get(year, {}).get("Cash And Cash Equivalents")  # Correct key
@@ -59,7 +67,7 @@ class ValuationRatios:
         # plot_ratio(ratios, "Enterprise Value to EBITDA (EV/EBITDA) Ratio", "Times")
 
 if __name__ == "__main__":
-    ticker = "ZOMATO.NS"
+    ticker = "RELIANCE.NS"
     duration = 5
     data = {
         "income_statement": get_income_statement(ticker, duration),
@@ -68,6 +76,6 @@ if __name__ == "__main__":
     }
 
     ratios = ValuationRatios(ticker, duration, data)
-    ratios.pe_ratio()
-    ratios.pb_ratio()
-    ratios.ev_ebitda_ratio()
+    print(ratios.pe_ratio())
+    print(ratios.pb_ratio())
+    print(ratios.ev_ebitda_ratio())

@@ -17,7 +17,7 @@ class SolvencyRatios:
     def debt_to_equity_ratio(self):
         """Calculates and plots Debt-to-Equity (D/E) Ratio = Total Debt / Shareholders' Equity."""
         if not self.balance_sheet:
-            return
+            return {}
         
         de_ratio = {}
         for year in self.balance_sheet:
@@ -27,13 +27,13 @@ class SolvencyRatios:
             if total_debt is not None and equity:
                 de_ratio[year] = total_debt / equity
         
-        return ratios
+        return de_ratio
         # plot_ratio(de_ratio, "Debt-to-Equity (D/E) Ratio", "Ratio")
     
     def interest_coverage_ratio(self):
         """Calculates and plots Interest Coverage Ratio = EBIT / Interest Expense."""
         if not self.income_statement:
-            return
+            return {}
         
         icr = {}
         for year in self.income_statement:
@@ -43,13 +43,13 @@ class SolvencyRatios:
             if ebit is not None and interest_expense and interest_expense != 0:
                 icr[year] = ebit / interest_expense
         
-        return ratios
+        return icr
         # plot_ratio(icr, "Interest Coverage Ratio", "Ratio")
     
     def debt_to_asset_ratio(self):
         """Calculates and plots Debt-to-Asset Ratio = Total Debt / Total Assets."""
         if not self.balance_sheet:
-            return
+            return {}
         
         da_ratio = {}
         for year in self.balance_sheet:
@@ -59,7 +59,7 @@ class SolvencyRatios:
             if total_debt is not None and total_assets:
                 da_ratio[year] = total_debt / total_assets
         
-        return ratios
+        return da_ratio
         # plot_ratio(da_ratio, "Debt-to-Asset Ratio", "Ratio")
 
 if __name__ == "__main__":

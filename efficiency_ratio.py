@@ -16,6 +16,9 @@ class EfficiencyRatios:
     
     def asset_turnover_ratio(self):
         """Calculates and plots Asset Turnover Ratio = Revenue / Average Total Assets."""
+        if not (self.balance_sheet and self.income_statement):
+            return {}
+        
         ratios = {}
         for year in self.income_statement:
             revenue = self.income_statement.get(year, {}).get("Total Revenue", None)
@@ -27,10 +30,12 @@ class EfficiencyRatios:
                 ratios[year] = revenue / avg_assets
         
         return ratios
-        # plot_ratio(ratios, "Asset Turnover Ratio", "Times")
     
     def inventory_turnover_ratio(self):
         """Calculates and plots Inventory Turnover Ratio = Cost of Goods Sold / Average Inventory."""
+        if not (self.balance_sheet and self.income_statement):
+            return {}
+        
         ratios = {}
         for year in self.income_statement:
             cogs = self.income_statement.get(year, {}).get("Cost Of Revenue", None)
@@ -42,10 +47,12 @@ class EfficiencyRatios:
                 ratios[year] = cogs / avg_inventory
         
         return ratios
-        # plot_ratio(ratios, "Inventory Turnover Ratio", "Times")
     
     def receivables_turnover_ratio(self):
         """Calculates and plots Receivables Turnover Ratio = Revenue / Average Accounts Receivable."""
+        if not (self.balance_sheet and self.income_statement):
+            return {}
+        
         ratios = {}
         for year in self.income_statement:
             revenue = self.income_statement.get(year, {}).get("Total Revenue", None)
@@ -57,7 +64,6 @@ class EfficiencyRatios:
                 ratios[year] = revenue / avg_receivables
         
         return ratios
-        #plot_ratio(ratios, "Receivables Turnover Ratio", "Times")
 
 if __name__ == "__main__":
     ticker = "RELIANCE.NS"

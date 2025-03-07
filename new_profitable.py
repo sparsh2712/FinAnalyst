@@ -17,7 +17,6 @@ class ProfitabilityRatios:
     def net_profit_margin(self):
         """Calculates and plots Net Profit Margin (%) = (Net Profit / Revenue) * 100."""
         if not self.income_statement:
-            print("NO values")
             return {}
         
         net_profit_margin = {}
@@ -33,7 +32,6 @@ class ProfitabilityRatios:
     def operating_profit_margin(self):
         """Calculates and plots Operating Profit Margin (%) = (Operating Profit / Revenue) * 100."""
         if not self.income_statement:
-            print("NO values")
             return {}
         
         operating_profit_margin = {}
@@ -49,7 +47,6 @@ class ProfitabilityRatios:
     def return_on_equity(self):
         """Calculates and plots Return on Equity (ROE) (%) = (Net Profit / Shareholders' Equity) * 100."""
         if not self.income_statement or not self.balance_sheet:
-            print("NO values")
             return {}
         
         roe = {}
@@ -57,7 +54,7 @@ class ProfitabilityRatios:
             net_profit = self.income_statement.get(year, {}).get("Net Income", None)
             equity = self.balance_sheet.get(year, {}).get("Stockholders Equity", None)
             
-            if net_profit is not None and equity:
+            if net_profit is not None and equity and equity != 0:
                 roe[year] = (net_profit / equity) * 100
         
         return roe
@@ -65,15 +62,14 @@ class ProfitabilityRatios:
     def return_on_assets(self):
         """Calculates and plots Return on Assets (ROA) (%) = (Net Profit / Total Assets) * 100."""
         if not self.income_statement or not self.balance_sheet:
-            print("NO values")
-            return
+            return {}
         
         roa = {}
         for year in self.income_statement:
             net_profit = self.income_statement.get(year, {}).get("Net Income", None)
             total_assets = self.balance_sheet.get(year, {}).get("Total Assets", None)
             
-            if net_profit is not None and total_assets:
+            if net_profit is not None and total_assets and total_assets != 0:
                 roa[year] = (net_profit / total_assets) * 100
         
         return roa
@@ -81,53 +77,29 @@ class ProfitabilityRatios:
     def return_on_capital_employed(self):
         """Calculates and plots Return on Capital Employed (ROCE) (%) = (EBIT / Capital Employed) * 100."""
         if not self.income_statement or not self.balance_sheet:
-            print("NO values")
-            return
+            return {}
         
         roce = {}
         for year in self.income_statement:
             ebit = self.income_statement.get(year, {}).get("EBIT", None)
             capital_employed = self.balance_sheet.get(year, {}).get("Total Assets", None)
             
-            if ebit is not None and capital_employed:
+            if ebit is not None and capital_employed and capital_employed != 0:
                 roce[year] = (ebit / capital_employed) * 100
         
         return roce
     
     def earnings_per_share(self):
         """Calculates and plots Earnings Per Share (EPS) if outstanding shares data is available, otherwise returns current EPS."""
-        if not self.income_statement or not self.balance_sheet:
-            print("NO values")
-            return
+        if not self.income_statement:
+            return {}
         
         eps = {}
         for year in self.income_statement:
             net_profit = self.income_statement.get(year, {}).get("Net Income", None)
             shares_outstanding = self.balance_sheet.get(year, {}).get("Ordinary Shares Number", None)
             
-            if net_profit is not None and shares_outstanding:
+            if net_profit is not None and shares_outstanding and shares_outstanding > 0:
                 eps[year] = net_profit / shares_outstanding
         
-        if eps:
-            return eps
-        else:
-            stock = yf.Ticker(self.ticker)
-            return stock.info.get("trailingEps", "EPS data unavailable")
-
-if __name__ == "__main__":
-    ticker = "ALOKINDS.NS"
-    duration = 5
-    data = {
-        "income_statement": get_income_statement(ticker, duration),
-        "balance_sheet": get_balance_sheet(ticker, duration)
-    }
-
-    # print(data["balance_sheet"].keys())
-    
-    ratios = ProfitabilityRatios(ticker, duration, data)
-    ratios.net_profit_margin()
-    ratios.operating_profit_margin()
-    ratios.return_on_equity()
-    ratios.return_on_assets()
-    ratios.return_on_capital_employed()
-    ratios.earnings_per_share()
+        return eps
